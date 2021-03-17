@@ -1,0 +1,15 @@
+{
+  "name": "nodeserver",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "browserify ./js/index.js -o ./js/client.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "getusermedia": "^2.0.1",
+    "simple-peer": "^9.9.3"
+  }
+}
