@@ -148,7 +148,7 @@ ws.onclose = (msg) => {
 
 function init_self_stream() {
     stream.then(function (stream) {
-        showVideo(stream);
+        show_video(stream);
     });
 }
 
@@ -178,7 +178,7 @@ function create_peer(user) {
         }
 
         peer.on("stream", function (stream) {
-            showVideo(stream, user.user_name);
+            show_video(stream, user.user_name);
         });
 
         user.peer_obj = peer;
@@ -194,7 +194,7 @@ function create_video_element(name) {
     vid_div.appendChild(vid);
 }
 
-function showVideo(stream, streamer = 'yourvid') {
+function show_video(stream, streamer = 'yourvid') {
     if (streamer != 'yourvid') {
         create_video_element(streamer);
     }
