@@ -2686,13 +2686,15 @@ process.umask = function() { return 0; };
 
 },{}],7:[function(require,module,exports){
 var Peer = require("simple-peer");
-var ws = new WebSocket("ws://localhost:8080/webRTC-Signal/signal");
+var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 
 
 var our_username;
 var users = [];
 
+// ------------------- JSON TEMPLATES -------------------
+//
 // var obj_to_server = {
 //     "action": "action",
 //     "room_id": "room_id",
@@ -2723,8 +2725,9 @@ var users = [];
 //     "sdp_data" : "peer_signal_data",
 //     "peer_obj" : ""
 // }
-// here sdp data we get is of the other user
+// here sdp_data -> sdp data we get is of the other user
 // here initiate -> decides if we need to create a inititor peer or client peer.
+// here peer_obj -> ref to the peer object created to communicated with that user
 
 function send_to_server(action, room_id, to_user = " ", data_type = " ", data_username = our_username, sdp_data = " ") {
     var obj = {
@@ -2741,25 +2744,35 @@ function send_to_server(action, room_id, to_user = " ", data_type = " ", data_us
     ws.send(JSON.stringify(obj));
 }
 
-// TODO : create peer_users list(contains only usernames). put peers in media_loop in an async way -> peer_users.foreach maybe??
-
-ws.onopen = () => {
-    console.log("On Open ");
+function init_event_binders() {
     document.getElementById("create").addEventListener('click', function () {
-        console.log("button create is clicked ");
-        room_id = document.getElementById("RoomID").value;
-        our_username = document.getElementById("our_username").value;
-
-        send_to_server("Create Room", room_id);
+        create_room();
     });
 
     document.getElementById("join").addEventListener('click', function () {
-        console.log("button join is clicked ");
-        room_id = document.getElementById("RoomID").value;
-        our_username = document.getElementById("our_username").value;
-
-        send_to_server("Join Room", room_id);
+        join_room();
     });
+}
+
+function create_room() {
+    console.log("button create is clicked ");
+    room_id = document.getElementById("RoomID").value;
+    our_username = document.getElementById("our_username").value;
+    send_to_server("Create Room", room_id);
+}
+
+function join_room() {
+    console.log("button join is clicked ");
+    room_id = document.getElementById("RoomID").value;
+    our_username = document.getElementById("our_username").value;
+    send_to_server("Join Room", room_id);
+}
+
+//---------------------- websocket event listeners ----------------------
+
+ws.onopen = () => {
+    console.log("On Open ");
+    init_event_binders();
 }
 
 ws.onmessage = function (msg) {
@@ -2767,11 +2780,11 @@ ws.onmessage = function (msg) {
     console.log("On msg = " + res.response);
 
     if (res.response == "room created") {
-        init_self();
+        init_self_stream();
     }
 
     if (res.response == "room joined") {
-        init_self();
+        init_self_stream();
         var res_data = JSON.parse(res.data);
         console.log(res_data);
         if (res_data.type == "participants") {
@@ -2782,7 +2795,7 @@ ws.onmessage = function (msg) {
                     "initiate": true,
                     "send_signal": false,
                     "sdp_data": " ",
-                    "peer_obj" : " "
+                    "peer_obj": " "
                 }
                 create_peer(user);
             })
@@ -2799,7 +2812,7 @@ ws.onmessage = function (msg) {
                 "initiate": false,
                 "send_signal": true,
                 "sdp_data": res_data.sdp_data,
-                "peer_obj" : " "
+                "peer_obj": " "
             }
             create_peer(user);
         }
@@ -2808,7 +2821,6 @@ ws.onmessage = function (msg) {
             // dont use foreach
             users.forEach((user) => {
                 if (user.user_name == username) {
-                    console.log("username matched in users list");
                     user.peer_obj.signal(res_data.sdp_data);
                 }
             })
@@ -2821,7 +2833,7 @@ ws.onclose = (msg) => {
     console.log("On Close = " + msg);
 };
 
-function init_self() {
+function init_self_stream() {
     stream.then(function (stream) {
         showVideo(stream);
     });
@@ -2840,9 +2852,7 @@ function create_peer(user) {
         })
 
         peer.on('signal', function (data) {
-            console.log("signal called ");
             if (user.initiate) {
-                console.log("initiated offer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "offer", data_username = our_username, sdp_data = JSON.stringify(data));
             } else {
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "answer", data_username = our_username, sdp_data = JSON.stringify(data));
@@ -2855,7 +2865,7 @@ function create_peer(user) {
         }
 
         peer.on("stream", function (stream) {
-            showVideo(stream, "othervid");
+            showVideo(stream, user.user_name);
         });
 
         user.peer_obj = peer;
@@ -2863,7 +2873,18 @@ function create_peer(user) {
 
 }
 
+function create_video_element(name) {
+    var vid_div = document.getElementById("vid_div");
+    var vid = document.createElement("video");
+    vid.setAttribute("id", name);
+    vid.setAttribute("autoplay","true");
+    vid_div.appendChild(vid);
+}
+
 function showVideo(stream, streamer = 'yourvid') {
+    if (streamer != 'yourvid') {
+        create_video_element(streamer);
+    }
     const video = document.getElementById(streamer);;
     video.srcObject = stream;
     video.play();

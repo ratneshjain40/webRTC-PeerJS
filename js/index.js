@@ -1,5 +1,5 @@
 var Peer = require("simple-peer");
-var ws = new WebSocket("ws://localhost:8080/webRTC-Signal/signal");
+var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 
 
@@ -178,7 +178,7 @@ function create_peer(user) {
         }
 
         peer.on("stream", function (stream) {
-            showVideo(stream, "othervid");
+            showVideo(stream, user.user_name);
         });
 
         user.peer_obj = peer;
@@ -186,7 +186,18 @@ function create_peer(user) {
 
 }
 
+function create_video_element(name) {
+    var vid_div = document.getElementById("vid_div");
+    var vid = document.createElement("video");
+    vid.setAttribute("id", name);
+    vid.setAttribute("autoplay","true");
+    vid_div.appendChild(vid);
+}
+
 function showVideo(stream, streamer = 'yourvid') {
+    if (streamer != 'yourvid') {
+        create_video_element(streamer);
+    }
     const video = document.getElementById(streamer);;
     video.srcObject = stream;
     video.play();
