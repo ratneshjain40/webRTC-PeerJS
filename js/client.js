@@ -2686,7 +2686,7 @@ process.umask = function() { return 0; };
 
 },{}],7:[function(require,module,exports){
 var Peer = require("simple-peer");
-var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
+var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 
 
@@ -2835,7 +2835,7 @@ ws.onclose = (msg) => {
 
 function init_self_stream() {
     stream.then(function (stream) {
-        showVideo(stream);
+        show_video(stream);
     });
 }
 
@@ -2865,7 +2865,7 @@ function create_peer(user) {
         }
 
         peer.on("stream", function (stream) {
-            showVideo(stream, user.user_name);
+            show_video(stream, user.user_name);
         });
 
         user.peer_obj = peer;
@@ -2881,7 +2881,7 @@ function create_video_element(name) {
     vid_div.appendChild(vid);
 }
 
-function showVideo(stream, streamer = 'yourvid') {
+function show_video(stream, streamer = 'yourvid') {
     if (streamer != 'yourvid') {
         create_video_element(streamer);
     }
