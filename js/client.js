@@ -2686,7 +2686,9 @@ process.umask = function() { return 0; };
 
 },{}],7:[function(require,module,exports){
 var Peer = require("simple-peer");
-var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
+//var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
+var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
+
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 
 
@@ -2716,7 +2718,12 @@ var users = [];
 //         "info": "extra field"
 //     }
 // }
-// here if we get type -> participant, we need to create an initiator peer for it and send it back.
+//
+// var response_obj = {
+//     "response" : "response",
+//     "data": "useranme"
+// }
+// this is the response shape where there are no technical fields like -> left room
 
 // var user = {
 //     "user_name": "random name",
@@ -2751,6 +2758,10 @@ function init_event_binders() {
 
     document.getElementById("join").addEventListener('click', function () {
         join_room();
+    });
+
+    document.getElementById("leave").addEventListener('click', function () {
+        ws.close();
     });
 }
 
@@ -2827,9 +2838,14 @@ ws.onmessage = function (msg) {
         }
 
     }
+
+    if (res.response == "left room") {
+        close_connections(res.data);
+    }
 }
 
 ws.onclose = (msg) => {
+    close_connections();
     console.log("On Close = " + msg);
 };
 
@@ -2873,12 +2889,28 @@ function create_peer(user) {
 
 }
 
+function close_connections(username = '') {
+    users.forEach((user) => {
+        if (username == '' || user.user_name == username) {
+            user.peer_obj.removeAllListeners();
+            user.peer_obj.destroy();
+            remove_video_element(user.user_name);
+        }
+    });
+}
+
 function create_video_element(name) {
     var vid_div = document.getElementById("vid_div");
     var vid = document.createElement("video");
     vid.setAttribute("id", name);
-    vid.setAttribute("autoplay","true");
+    vid.setAttribute("autoplay", "true");
     vid_div.appendChild(vid);
+}
+
+function remove_video_element(name) {
+    var vid_div = document.getElementById("vid_div");
+    var vid = document.getElementById(name);
+    vid_div.removeChild(vid);
 }
 
 function show_video(stream, streamer = 'yourvid') {
