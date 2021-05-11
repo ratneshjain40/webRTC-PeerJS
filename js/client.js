@@ -2761,12 +2761,13 @@ function init_event_binders() {
     });
 
     document.getElementById("send").addEventListener('click', function () {
-        var text = document.getElementById("send_messages").textContent;
+        var text = document.getElementById("send_messages").value;
+        console.log(text);
         send_text(text);
     });
 
     document.getElementById("leave").addEventListener('click', function () {
-        send_to_server("Leave Room",room_id);
+        send_to_server("Leave Room", room_id);
         close_connections();
     });
 }
@@ -2788,18 +2789,28 @@ function join_room() {
 function close_connections(username = '') {
     users.forEach((user) => {
         if (username == '' || user.user_name == username) {
-            console.log("Leaving " + username);
-            console.log("Leaving " + user.user_name);
             user.peer_obj.removeAllListeners();
             user.peer_obj.destroy();
             remove_video_element(user.user_name);
-            remove_from_users(user);
+            remove_user(user);
         }
     });
     console.log(users);
 }
 
-function remove_from_users(user) {
+function create_user(username, initiate = true, send_signal = false, sdp_data = " ", peer_obj = " ") {
+    var user = {
+        "user_name": username,
+        "initiate": initiate,
+        "send_signal": send_signal,
+        "sdp_data": sdp_data,
+        "peer_obj": peer_obj
+    };
+
+    return user;
+}
+
+function remove_user(user) {
     for (var i = 0; i < users.length; i++) {
         if (users[i].user_name == user.user_name) {
             var spliced = users.splice(i, 1);
@@ -2848,13 +2859,7 @@ ws.onmessage = function (msg) {
         if (res_data.type == "participants") {
             var usernames = res_data.username;
             usernames.forEach((username) => {
-                var user = {
-                    "user_name": username,
-                    "initiate": true,
-                    "send_signal": false,
-                    "sdp_data": " ",
-                    "peer_obj": " "
-                }
+                var user = create_user(username);
                 create_peer(user);
             })
         }
@@ -2865,13 +2870,7 @@ ws.onmessage = function (msg) {
         console.log(res_data);
         if (res_data.type == "offer") {
             var username = res_data.username;
-            var user = {
-                "user_name": username,
-                "initiate": false,
-                "send_signal": true,
-                "sdp_data": res_data.sdp_data,
-                "peer_obj": " "
-            }
+            var user = create_user(username,false,true,res_data.sdp_data);
             create_peer(user);
         }
         if (res_data.type == "answer") {
@@ -2898,7 +2897,7 @@ ws.onclose = (msg) => {
 
 function init_self_stream() {
     stream.then(function (stream) {
-        show_video(stream,our_username);
+        show_video(stream, our_username);
     });
 }
 
@@ -2933,7 +2932,7 @@ function create_peer(user) {
 
         peer.on('data', (data) => {
             show_text(data);
-          })
+        })
 
         user.peer_obj = peer;
     })
