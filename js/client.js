@@ -2691,7 +2691,7 @@ var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
 
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: false });
 
-
+var room_id;
 var our_username;
 var users = [];
 
@@ -2760,23 +2760,70 @@ function init_event_binders() {
         join_room();
     });
 
+    document.getElementById("send").addEventListener('click', function () {
+        var text = document.getElementById("send_messages").textContent;
+        send_text(text);
+    });
+
     document.getElementById("leave").addEventListener('click', function () {
-        ws.close();
+        send_to_server("Leave Room",room_id);
+        close_connections();
     });
 }
 
 function create_room() {
     console.log("button create is clicked ");
-    room_id = document.getElementById("RoomID").value;
-    our_username = document.getElementById("our_username").value;
+    room_id = get_room_id();
+    our_username = get_username();
     send_to_server("Create Room", room_id);
 }
 
 function join_room() {
     console.log("button join is clicked ");
-    room_id = document.getElementById("RoomID").value;
-    our_username = document.getElementById("our_username").value;
+    room_id = get_room_id();
+    our_username = get_username();
     send_to_server("Join Room", room_id);
+}
+
+function close_connections(username = '') {
+    users.forEach((user) => {
+        if (username == '' || user.user_name == username) {
+            console.log("Leaving " + username);
+            console.log("Leaving " + user.user_name);
+            user.peer_obj.removeAllListeners();
+            user.peer_obj.destroy();
+            remove_video_element(user.user_name);
+            remove_from_users(user);
+        }
+    });
+    console.log(users);
+}
+
+function remove_from_users(user) {
+    for (var i = 0; i < users.length; i++) {
+        if (users[i].user_name == user.user_name) {
+            var spliced = users.splice(i, 1);
+            console.log("Removed element: " + spliced);
+        }
+    }
+}
+
+function get_room_id() {
+    return document.getElementById("RoomID").value;
+}
+
+function get_username() {
+    return document.getElementById("our_username").value;
+}
+
+function send_text(text_message) {
+    users.forEach((user) => {
+        user.peer_obj.send(text_message);
+    });
+}
+
+function show_text(text_message) {
+    document.getElementById("messages").textContent += text_message + '\n';
 }
 
 //---------------------- websocket event listeners ----------------------
@@ -2851,7 +2898,7 @@ ws.onclose = (msg) => {
 
 function init_self_stream() {
     stream.then(function (stream) {
-        show_video(stream);
+        show_video(stream,our_username);
     });
 }
 
@@ -2884,19 +2931,13 @@ function create_peer(user) {
             show_video(stream, user.user_name);
         });
 
+        peer.on('data', (data) => {
+            show_text(data);
+          })
+
         user.peer_obj = peer;
     })
 
-}
-
-function close_connections(username = '') {
-    users.forEach((user) => {
-        if (username == '' || user.user_name == username) {
-            user.peer_obj.removeAllListeners();
-            user.peer_obj.destroy();
-            remove_video_element(user.user_name);
-        }
-    });
 }
 
 function create_video_element(name) {
@@ -2913,10 +2954,8 @@ function remove_video_element(name) {
     vid_div.removeChild(vid);
 }
 
-function show_video(stream, streamer = 'yourvid') {
-    if (streamer != 'yourvid') {
-        create_video_element(streamer);
-    }
+function show_video(stream, streamer) {
+    create_video_element(streamer);
     const video = document.getElementById(streamer);;
     video.srcObject = stream;
     video.play();
