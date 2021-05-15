@@ -1,13 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
-*
-{
-   margin: 0;
-   padding: 0;
-   box-sizing: border-box;
-   font-family: 'Poppins', sans-serif;
-}
-
 .bottom
 {
    background-color: rgb(107, 178, 180);
@@ -33,14 +25,14 @@
    height: 45px;
 }
 
-img{
+.img{
    width: 27px;
    height: 27px;
    vertical-align: -3px; 
    filter: invert(1);
 }
 
-button{
+.button{
    margin: 25px;
    border-radius: 50%;
    width: 42px;
@@ -54,7 +46,7 @@ button{
    font-size: 1.5em;
 }
 
-button:hover{
+.button:hover{
    background-color: red;
 }
 
