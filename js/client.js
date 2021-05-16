@@ -2686,16 +2686,17 @@ process.umask = function() { return 0; };
 
 },{}],7:[function(require,module,exports){
 var Peer = require("simple-peer");
-//var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
-var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
+var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
+//var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
 
-var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
 var room_id;
 var our_username;
 var users = [];
+var is_muted = false;
 
-// ------------------- JSON TEMPLATES -------------------
+// ------------------- JSON TEMPLATES and Obj structure-------------------
 //
 // var obj_to_server = {
 //     "action": "action",
@@ -2723,33 +2724,19 @@ var users = [];
 //     "response" : "response",
 //     "data": "useranme"
 // }
-// this is the response shape where there are no technical fields like -> left room
+// this is the response shape where there are no technical fields like -> left room obj from server
 
 // var user = {
 //     "user_name": "random name",
 //     "initiate": "true",
-//     "send_signal" : "flase",
+//     "add_signal" : "flase",
 //     "sdp_data" : "peer_signal_data",
-//     "peer_obj" : ""
+//     "peer_obj" : "",
+//     "change_stream" : ""
 // }
 // here sdp_data -> sdp data we get is of the other user
 // here initiate -> decides if we need to create a inititor peer or client peer.
 // here peer_obj -> ref to the peer object created to communicated with that user
-
-function send_to_server(action, room_id, to_user = " ", data_type = " ", data_username = our_username, sdp_data = " ") {
-    var obj = {
-        "action": action,
-        "room_id": room_id,
-        "to_user": to_user,
-        "data": {
-            "type": data_type,
-            "username": data_username,
-            "sdp_data": sdp_data,
-        }
-    };
-    console.log(obj);
-    ws.send(JSON.stringify(obj));
-}
 
 function init_event_binders() {
     document.getElementById("create").addEventListener('click', function () {
@@ -2762,14 +2749,28 @@ function init_event_binders() {
 
     document.getElementById("send").addEventListener('click', function () {
         var text = document.getElementById("send_messages").value;
-        console.log(text);
-        send_text(text);
+        document.getElementById("send_messages").value = " ";
+        send_data(text);
     });
 
     document.getElementById("leave").addEventListener('click', function () {
         send_to_server("Leave Room", room_id);
         close_connections();
     });
+
+    document.getElementById("replace").addEventListener('click', function () {
+        toggle_mute_self();
+    });
+}
+
+// --------- Manage users ---------
+
+function get_room_id() {
+    return document.getElementById("RoomID").value;
+}
+
+function get_username() {
+    return document.getElementById("our_username").value;
 }
 
 function create_room() {
@@ -2786,25 +2787,20 @@ function join_room() {
     send_to_server("Join Room", room_id);
 }
 
-function close_connections(username = '') {
-    users.forEach((user) => {
-        if (username == '' || user.user_name == username) {
-            user.peer_obj.removeAllListeners();
-            user.peer_obj.destroy();
-            remove_video_element(user.user_name);
-            remove_user(user);
-        }
-    });
-    console.log(users);
+function ping_server() {
+    setInterval(function () {
+        send_to_server("Active", room_id);
+    }, 25000);
 }
 
-function create_user(username, initiate = true, send_signal = false, sdp_data = " ", peer_obj = " ") {
+function create_user(username, initiate = true, send_offer = true, sdp_data = " ", peer_obj = " ", change_stream = " ") {
     var user = {
         "user_name": username,
         "initiate": initiate,
-        "send_signal": send_signal,
+        "send_offer": send_offer,
         "sdp_data": sdp_data,
-        "peer_obj": peer_obj
+        "peer_obj": peer_obj,
+        "change_stream": change_stream,
     };
 
     return user;
@@ -2813,31 +2809,42 @@ function create_user(username, initiate = true, send_signal = false, sdp_data = 
 function remove_user(user) {
     for (var i = 0; i < users.length; i++) {
         if (users[i].user_name == user.user_name) {
-            var spliced = users.splice(i, 1);
-            console.log("Removed element: " + spliced);
+            users.splice(i, 1);
         }
     }
 }
 
-function get_room_id() {
-    return document.getElementById("RoomID").value;
-}
-
-function get_username() {
-    return document.getElementById("our_username").value;
-}
-
-function send_text(text_message) {
-    users.forEach((user) => {
-        user.peer_obj.send(text_message);
+function toggle_mute_self() {
+    //if (!is_muted) {
+    //    users.forEach((user) => {
+    //        send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Mute", data_username = our_username, sdp_data = '');
+    //    })
+    //    is_muted = !is_muted;
+    //} else {
+    //    users.forEach((user) => {
+    //        send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Unmute", data_username = our_username, sdp_data = '');
+    //    })
+    //    is_muted = !is_muted;
+    //};
+    stream.then((stream) => {
+        if (!is_muted) {
+            users.forEach((user) => {
+                user.change_stream = true;
+                user.peer_obj.removeTrack(stream.getAudioTracks()[0], stream);
+            })
+            is_muted = !is_muted;
+        } else {
+            users.forEach((user) => {
+                user.change_stream = true;
+                let temp_stream = stream.clone();
+                user.peer_obj.addTrack(temp_stream.getAudioTracks()[0], stream);
+            })
+            is_muted = !is_muted;
+        }
     });
 }
 
-function show_text(text_message) {
-    document.getElementById("messages").textContent += text_message + '\n';
-}
-
-//---------------------- websocket event listeners ----------------------
+//---------------------- WebSocket event listeners ----------------------
 
 ws.onopen = () => {
     console.log("On Open ");
@@ -2850,10 +2857,13 @@ ws.onmessage = function (msg) {
 
     if (res.response == "room created") {
         init_self_stream();
+        ping_server();
     }
 
     if (res.response == "room joined") {
         init_self_stream();
+        ping_server();
+
         var res_data = JSON.parse(res.data);
         console.log(res_data);
         if (res_data.type == "participants") {
@@ -2870,8 +2880,10 @@ ws.onmessage = function (msg) {
         console.log(res_data);
         if (res_data.type == "offer") {
             var username = res_data.username;
-            var user = create_user(username,false,true,res_data.sdp_data);
-            create_peer(user);
+            var user = create_user(username, false, false, res_data.sdp_data);
+            create_peer(user).then((peer) => {
+                peer.signal(res_data.sdp_data);
+            })
         }
         if (res_data.type == "answer") {
             var username = res_data.username;
@@ -2882,7 +2894,26 @@ ws.onmessage = function (msg) {
                 }
             })
         }
+        if (res_data.type == "change_stream") {
+            var username = res_data.username;
+            // dont use foreach
+            users.forEach((user) => {
+                if (user.user_name == username) {
+                    user.peer_obj.signal(res_data.sdp_data);
+                }
+            })
+        }
+        
 
+        if (res_data.type == "Mute") {
+            var username = res_data.username;
+            mute_video(username);
+        }
+
+        if (res_data.type == "Unmute") {
+            var username = res_data.username;
+            unmute_video(username);
+        }
     }
 
     if (res.response == "left room") {
@@ -2895,17 +2926,31 @@ ws.onclose = (msg) => {
     console.log("On Close = " + msg);
 };
 
-function init_self_stream() {
-    stream.then(function (stream) {
-        show_video(stream, our_username);
-    });
+// ----------- Peer conncections -----------
+
+function send_to_server(action, room_id, to_user = " ", data_type = " ", data_username = our_username, sdp_data = " ") {
+    var obj = {
+        "action": action,
+        "room_id": room_id,
+        "to_user": to_user,
+        "data": {
+            "type": data_type,
+            "username": data_username,
+            "sdp_data": sdp_data,
+        }
+    };
+    //remove later
+    if (obj.action != "Active") {
+        console.log(obj);
+    }
+    ws.send(JSON.stringify(obj));
 }
 
-function create_peer(user) {
+async function create_peer(user) {
 
     users.push(user);
 
-    stream.then(function (stream) {
+    return stream.then(function (stream) {
 
         var peer = new Peer({
             initiator: user.initiate,
@@ -2913,31 +2958,79 @@ function create_peer(user) {
             stream: stream
         })
 
+        user.peer_obj = peer;
+
         peer.on('signal', function (data) {
-            if (user.initiate) {
+            if (user.send_offer) {
+                console.log("sending offer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "offer", data_username = our_username, sdp_data = JSON.stringify(data));
+                user.send_offer = false;
+            } else if(user.change_stream) {
+                console.log("sending change stream");
+                send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "change_stream", data_username = our_username, sdp_data = JSON.stringify(data));
             } else {
+                console.log("sending answer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "answer", data_username = our_username, sdp_data = JSON.stringify(data));
             }
         });
-
-        if (user.send_signal) {
-            peer.signal(user.sdp_data);
-            user.send_signal = false;
-        }
 
         peer.on("stream", function (stream) {
             show_video(stream, user.user_name);
         });
 
         peer.on('data', (data) => {
-            show_text(data);
+            show_data(data);
         })
+        //if (user.add_signal) {
+        //    console.log("adding_signal");
+        //    peer.signal();
+        //    user.add_signal = false;
+        //}
 
-        user.peer_obj = peer;
-    })
-
+        return user.peer_obj;
+    });
 }
+
+function send_data(data, to_user = 'all') {
+    users.forEach((user) => {
+        if (to_user == "all" || to_user == user.user_name) {
+            user.peer_obj.send(data);
+        }
+    });
+}
+
+function show_data(text_message) {
+    document.getElementById("messages").textContent += text_message + '\n';
+}
+
+function close_connections(username = '') {
+    users.forEach((user) => {
+        if (username == '' || user.user_name == username) {
+            user.peer_obj.removeAllListeners();
+            user.peer_obj.destroy();
+            remove_video_element(user.user_name);
+            remove_user(user);
+        }
+    });
+}
+
+// ----------- Manage video -----------
+
+function init_self_stream() {
+    stream.then(function (stream) {
+        show_video(stream, our_username, true);
+    });
+}
+
+function show_video(stream, streamer, muted = false) {
+    create_video_element(streamer);
+    const video = document.getElementById(streamer);;
+    video.srcObject = stream;
+    if (muted) {
+        video.muted = "muted";
+    }
+    video.play();
+};
 
 function create_video_element(name) {
     var vid_div = document.getElementById("vid_div");
@@ -2947,18 +3040,21 @@ function create_video_element(name) {
     vid_div.appendChild(vid);
 }
 
+function mute_video(name) {
+    const video = document.getElementById(name);
+    video.muted = "muted";
+}
+
+function unmute_video(name) {
+    const video = document.getElementById(name);
+    video.muted = "";
+}
+
 function remove_video_element(name) {
     var vid_div = document.getElementById("vid_div");
     var vid = document.getElementById(name);
     vid_div.removeChild(vid);
 }
-
-function show_video(stream, streamer) {
-    create_video_element(streamer);
-    const video = document.getElementById(streamer);;
-    video.srcObject = stream;
-    video.play();
-};
 },{"simple-peer":32}],8:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-env browser */
