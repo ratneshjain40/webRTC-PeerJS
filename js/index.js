@@ -8,6 +8,11 @@ var room_id;
 var our_username;
 var users = [];
 var is_muted = false;
+var curr_file = {
+    name = "none",
+    size = "none",
+    type = 'none'
+};
 
 // ------------------- JSON TEMPLATES and Obj structure-------------------
 //
@@ -74,6 +79,11 @@ function init_event_binders() {
     document.getElementById("replace").addEventListener('click', function () {
         toggle_mute_self();
     });
+
+    var input = document.getElementById("file");
+    input.onchange = e => {
+        set_file(e.target.files[0]);
+    }
 }
 
 // --------- Manage users ---------
@@ -151,6 +161,7 @@ function toggle_mute_self() {
 ws.onopen = () => {
     console.log("On Open ");
     init_event_binders();
+    ping_server();
 }
 
 ws.onmessage = function (msg) {
@@ -159,12 +170,10 @@ ws.onmessage = function (msg) {
 
     if (res.response == "room created") {
         init_self_stream();
-        ping_server();
     }
 
     if (res.response == "room joined") {
         init_self_stream();
-        ping_server();
 
         var res_data = JSON.parse(res.data);
         console.log(res_data);
@@ -205,7 +214,7 @@ ws.onmessage = function (msg) {
                 }
             })
         }
-        
+
 
         if (res_data.type == "Mute") {
             var username = res_data.username;
@@ -264,14 +273,11 @@ async function create_peer(user) {
 
         peer.on('signal', function (data) {
             if (user.send_offer) {
-                console.log("sending offer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "offer", data_username = our_username, sdp_data = JSON.stringify(data));
                 user.send_offer = false;
-            } else if(user.change_stream) {
-                console.log("sending change stream");
+            } else if (user.change_stream) {
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "change_stream", data_username = our_username, sdp_data = JSON.stringify(data));
             } else {
-                console.log("sending answer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "answer", data_username = our_username, sdp_data = JSON.stringify(data));
             }
         });
@@ -340,4 +346,9 @@ function remove_video_element(name) {
     var vid_div = document.getElementById("vid_div");
     var vid = document.getElementById(name);
     vid_div.removeChild(vid);
+}
+
+// Manage File
+function set_file(file) {
+    curr_file = file;
 }
