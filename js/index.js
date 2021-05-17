@@ -7,54 +7,14 @@ var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 var room_id = " ";
 var our_username;
 var users = [];
-var is_muted = false;
+var stream_properties = {
+    is_muted: false,
+}
 var curr_file = {
     name: "none",
     size: "none",
     type: "none"
 };
-
-// ------------------- JSON TEMPLATES and Obj structure-------------------
-//
-// var obj_to_server = {
-//     "action": "action",
-//     "room_id": "room_id",
-//     "to_user": "to user",
-//     "data": {
-//         "type": "offer/answer",
-//         "username": "ratnesh",
-//         "sdp_data": "simple_peer_signal_data",
-//         "info": "extra field"
-//     }
-// };
-
-// var response_obj = {
-//     "response" : "response",
-//     "data": {
-//         "type": "offer/answer/participants",
-//         "username": "ratnesh",
-//         "sdp_data": "simple_peer_signal_data",
-//         "info": "extra field"
-//     }
-// }
-//
-// var response_obj = {
-//     "response" : "response",
-//     "data": "useranme"
-// }
-// this is the response shape where there are no technical fields like -> left room obj from server
-
-// var user = {
-//     "user_name": "random name",
-//     "initiate": "true",
-//     "add_signal" : "flase",
-//     "sdp_data" : "peer_signal_data",
-//     "peer_obj" : "",
-//     "change_stream" : ""
-// }
-// here sdp_data -> sdp data we get is of the other user
-// here initiate -> decides if we need to create a inititor peer or client peer.
-// here peer_obj -> ref to the peer object created to communicated with that user
 
 function init_event_binders() {
     document.getElementById("create_btn_inner").addEventListener('click', function () {
@@ -78,10 +38,12 @@ function init_event_binders() {
     document.getElementById("leave").addEventListener('click', function () {
         send_to_server("Leave Room", room_id);
         close_connections();
+        reset_properties();
+        notify_user("Left Room ID : " + room_id);
     });
 
     document.getElementById("mic").addEventListener('click', function () {
-        toggle_mute_self();
+        toggle_mute();
     });
 
     //var input = document.getElementById("file");
@@ -108,16 +70,18 @@ function ping_server() {
     }, 25000);
 }
 
-function create_user(username, initiate = true, send_offer = true, sdp_data = " ", peer_obj = " ", change_stream = " ") {
+function create_user(username, initiate = true, send_offer = true, sdp_data = " ", peer_obj = " ", change_stream = false, stream_muted = false) {
     var user = {
         "user_name": username,
         "initiate": initiate,
         "send_offer": send_offer,
         "sdp_data": sdp_data,
         "peer_obj": peer_obj,
-        "change_stream": change_stream,
+        "stream_properties": {
+            "change_stream": change_stream,
+            "stream_muted": stream_muted
+        }
     };
-
     return user;
 }
 
@@ -129,25 +93,47 @@ function remove_user(user) {
     }
 }
 
-function toggle_mute_self() {
-    stream.then((stream) => {
-        if (!is_muted) {
-            users.forEach((user) => {
-                user.change_stream = true;
-                user.peer_obj.removeTrack(stream.getAudioTracks()[0], stream);
-            })
-            is_muted = !is_muted;
-        } else {
-            users.forEach((user) => {
-                user.change_stream = true;
-                let temp_stream = stream.clone();
-                user.peer_obj.addTrack(temp_stream.getAudioTracks()[0], stream);
-                stream.removeTrack(stream.getAudioTracks()[0]);
-                stream.addTrack(temp_stream.getAudioTracks()[0]);
-            })
-            is_muted = !is_muted;
-        }
-    });
+function notify_user(text, time = 5000) {
+    let do_not_notify = ["connection data", "left room"];
+    if (!do_not_notify.includes(text)) {
+        quickNotification(text);
+    }
+}
+
+function toggle_mute() {
+    if (!stream_properties.is_muted) {
+        users.forEach((user) => {
+            send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Mute", data_username = our_username, sdp_data = '');
+        })
+        stream_properties.is_muted = !stream_properties.is_muted;
+    } else {
+        users.forEach((user) => {
+            send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Unmute", data_username = our_username, sdp_data = '');
+        })
+        stream_properties.is_muted = !stream_properties.is_muted;
+    };
+}
+
+function modify_stream(username) {
+    if (stream_properties.is_muted) {
+        users.forEach((user) => {
+            if (user.user_name == username && user.stream_properties.stream_muted == false) {
+                send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Mute", data_username = our_username, sdp_data = '');
+            }
+        })
+    }
+}
+
+function reset_properties() {
+    room_id = " ";
+    our_username;
+    users = [];
+    stream_properties.is_muted = false;
+    curr_file = {
+        name: "none",
+        size: "none",
+        type: "none"
+    };
 }
 
 //---------------------- WebSocket event listeners ----------------------
@@ -159,23 +145,20 @@ ws.onopen = () => {
 }
 
 ws.onmessage = function (msg) {
-    var res = JSON.parse(msg.data);
-    console.log("On msg = " + res.response);
-    const info = addNotification(NOTIFICATION_TYPES.INFO, res.response);
-    setTimeout(() => {
-        removeNotification(info);
-    }, 5000);
+    var res_obj = JSON.parse(msg.data);
+    console.log("On msg = " + res_obj.response);
+    notify_user(res_obj.response);
 
-    if (res.response == "room created") {
+    if (res_obj.response == "room created") {
         toggle_pages('Page2', 'Page1');
         init_self_stream();
     }
 
-    if (res.response == "room joined") {
+    if (res_obj.response == "room joined") {
         toggle_pages('Page2', 'Page1');
         init_self_stream();
 
-        var res_data = JSON.parse(res.data);
+        var res_data = JSON.parse(res_obj.data);
         console.log(res_data);
         if (res_data.type == "participants") {
             var usernames = res_data.username;
@@ -186,8 +169,8 @@ ws.onmessage = function (msg) {
         }
     }
     // if you send and offer then you will recive an answer that you need to put in peer.signal(), so peer.signal will run for both initiator and reciver
-    if (res.response == "connection data") {
-        var res_data = JSON.parse(res.data);
+    if (res_obj.response == "connection data") {
+        var res_data = JSON.parse(res_obj.data);
         console.log(res_data);
         if (res_data.type == "offer") {
             var username = res_data.username;
@@ -202,6 +185,8 @@ ws.onmessage = function (msg) {
             users.forEach((user) => {
                 if (user.user_name == username) {
                     user.peer_obj.signal(res_data.sdp_data);
+                    // send connection successful after answer only -> any changes in the stream will be sent after they get success message
+                    send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "connection successful", data_username = our_username, sdp_data = ' ');
                 }
             })
         }
@@ -215,6 +200,10 @@ ws.onmessage = function (msg) {
             })
         }
 
+        if (res_data.type == "connection successful") {
+            var username = res_data.username;
+            modify_stream(username);
+        }
 
         if (res_data.type == "Mute") {
             var username = res_data.username;
@@ -227,13 +216,15 @@ ws.onmessage = function (msg) {
         }
     }
 
-    if (res.response == "left room") {
-        close_connections(res.data);
+    if (res_obj.response == "left room") {
+        close_connections(res_obj.data);
+        notify_user("User : " + res_obj.data + " left the meeting")
     }
 }
 
 ws.onclose = (msg) => {
     close_connections();
+    reset_properties();
     console.log("On Close = " + msg);
 };
 
@@ -273,8 +264,9 @@ async function create_peer(user) {
             if (user.send_offer) {
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "offer", data_username = our_username, sdp_data = JSON.stringify(data));
                 user.send_offer = false;
-            } else if (user.change_stream) {
+            } else if (user.stream_properties.change_stream) {
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "change_stream", data_username = our_username, sdp_data = JSON.stringify(data));
+                user.stream_properties.change_stream = false;
             } else {
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "answer", data_username = our_username, sdp_data = JSON.stringify(data));
             }
@@ -338,6 +330,16 @@ function create_video_element(name) {
     vid.setAttribute("id", name);
     vid.setAttribute("autoplay", "true");
     vid_div.appendChild(vid);
+}
+
+function mute_video(name) {
+    const video = document.getElementById(name);
+    video.muted = "muted";
+}
+
+function unmute_video(name) {
+    const video = document.getElementById(name);
+    video.muted = "";
 }
 
 function remove_video_element(name) {
