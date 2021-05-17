@@ -5,18 +5,23 @@
    <meta charset="UTF-8">
    <meta http-equiv="X-UA-Compatible" content="IE=edge">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="../css/index.css">
    <link rel="stylesheet" href="../css/style.css">
-   <link rel="stylesheet" href="../css/style2.css">
    <script src="https://kit.fontawesome.com/a8c9273754.js" crossorigin="anonymous"></script>
    <title>Welcome</title>
 </head>
 
 <body>
+
+   <div class="notification-container" id="notification-container">
+      
+   </div>
+
    <div id="Page1">
       <div class="container">
          <div class="content">
 
-            <form class="one" action="">
+            <form class="one" action="javascript:void(0);">
                <img class="avatar" src="../assets/avatar.svg" alt="avatar">
                <h1>Welcome</h1>
                <div>
@@ -29,7 +34,7 @@
                         <span class="close">+</span>
                         <img src="../assets/add-friend.svg" class="add-friend" width="50px" alt="">
                         <h2>Create</h2>
-                        <form action="">
+                        <form action="javascript:void(0);">
                            <div class="txt_field">
                               <input id="create_username" type="text" class="input" required>
                               <span></span>
@@ -40,7 +45,7 @@
                               <span></span>
                               <label>Meeting ID</label>
                            </div>
-                           <button class="btn" onclick="return show('Page2','Page1');">Create</button>
+                           <button id="create_btn_inner" class="btn">Create</button>
                         </form>
                      </div>
                   </div>
@@ -51,7 +56,7 @@
                         <span class="close">+</span>
                         <img src="../assets/add-friend.svg" class="add-friend" width="50px" alt="">
                         <h2>Join</h2>
-                        <form action="">
+                        <form action="javascript:void(0);">
                            <div class="txt_field">
                               <input id="join_username" type="text" class="input" required>
                               <span></span>
@@ -62,7 +67,7 @@
                               <span></span>
                               <label>Meeting ID</label>
                            </div>
-                           <button id="join_btn" onclick="return show('Page2','Page1');" class="btn">Connect</button>
+                           <button id="join_btn_inner" class="btn">Connect</button>
                         </form>
                      </div>
                   </div>
@@ -75,6 +80,10 @@
 
    <!-- Meeting HTML -->
    <div id="Page2" style="display:none">
+      <div id="vid_div">
+         <label>Your vid</label>
+         <br>
+      </div>
       <div class="bottom">
          <div>
             <div class="elements">
@@ -84,7 +93,7 @@
                         <i class='fas fa-microphone fa-lg fa-inverse'></i>
                      </button>
                   </span>
-                  <span class="end-call">
+                  <span class="end-call" id="leave">
                      <button class="button">
                         <img class="img" src="../assets/end-call.png" alt="">
                      </button>
@@ -105,8 +114,8 @@
          </div>
       </div>
    </div>
-
    <script src="../js/main.js"></script>
+   <script src="../js/client.js"></script>
 </body>
 
 </html>

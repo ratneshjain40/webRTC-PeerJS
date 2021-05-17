@@ -2691,10 +2691,15 @@ var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
 
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
-var room_id;
+var room_id = " ";
 var our_username;
 var users = [];
 var is_muted = false;
+var curr_file = {
+    name: "none",
+    size: "none",
+    type: "none"
+};
 
 // ------------------- JSON TEMPLATES and Obj structure-------------------
 //
@@ -2739,51 +2744,48 @@ var is_muted = false;
 // here peer_obj -> ref to the peer object created to communicated with that user
 
 function init_event_binders() {
-    document.getElementById("create").addEventListener('click', function () {
-        create_room();
+    document.getElementById("create_btn_inner").addEventListener('click', function () {
+        our_username = document.getElementById("create_username").value;
+        room_id = document.getElementById("create_room_id").value;
+        create_room(room_id);
     });
 
-    document.getElementById("join").addEventListener('click', function () {
-        join_room();
+    document.getElementById("join_btn_inner").addEventListener('click', function () {
+        our_username = document.getElementById("join_username").value;
+        room_id = document.getElementById("join_room_id").value;
+        join_room(room_id);
     });
 
-    document.getElementById("send").addEventListener('click', function () {
-        var text = document.getElementById("send_messages").value;
-        document.getElementById("send_messages").value = " ";
-        send_data(text);
-    });
+    //document.getElementById("send").addEventListener('click', function () {
+    //    var text = document.getElementById("send_messages").value;
+    //    document.getElementById("send_messages").value = " ";
+    //    send_data(text);
+    //});
 
     document.getElementById("leave").addEventListener('click', function () {
         send_to_server("Leave Room", room_id);
         close_connections();
     });
 
-    document.getElementById("replace").addEventListener('click', function () {
+    document.getElementById("mic").addEventListener('click', function () {
         toggle_mute_self();
     });
+
+    //var input = document.getElementById("file");
+    //input.onchange = e => {
+    //    set_file(e.target.files[0]);
+    //}
 }
 
 // --------- Manage users ---------
 
-function get_room_id() {
-    return document.getElementById("RoomID").value;
-}
-
-function get_username() {
-    return document.getElementById("our_username").value;
-}
-
-function create_room() {
+function create_room(room_id) {
     console.log("button create is clicked ");
-    room_id = get_room_id();
-    our_username = get_username();
     send_to_server("Create Room", room_id);
 }
 
-function join_room() {
+function join_room(room_id) {
     console.log("button join is clicked ");
-    room_id = get_room_id();
-    our_username = get_username();
     send_to_server("Join Room", room_id);
 }
 
@@ -2815,17 +2817,6 @@ function remove_user(user) {
 }
 
 function toggle_mute_self() {
-    //if (!is_muted) {
-    //    users.forEach((user) => {
-    //        send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Mute", data_username = our_username, sdp_data = '');
-    //    })
-    //    is_muted = !is_muted;
-    //} else {
-    //    users.forEach((user) => {
-    //        send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Unmute", data_username = our_username, sdp_data = '');
-    //    })
-    //    is_muted = !is_muted;
-    //};
     stream.then((stream) => {
         if (!is_muted) {
             users.forEach((user) => {
@@ -2838,6 +2829,8 @@ function toggle_mute_self() {
                 user.change_stream = true;
                 let temp_stream = stream.clone();
                 user.peer_obj.addTrack(temp_stream.getAudioTracks()[0], stream);
+                stream.removeTrack(stream.getAudioTracks()[0]);
+                stream.addTrack(temp_stream.getAudioTracks()[0]);
             })
             is_muted = !is_muted;
         }
@@ -2849,20 +2842,25 @@ function toggle_mute_self() {
 ws.onopen = () => {
     console.log("On Open ");
     init_event_binders();
+    ping_server();
 }
 
 ws.onmessage = function (msg) {
     var res = JSON.parse(msg.data);
     console.log("On msg = " + res.response);
+    const info = addNotification(NOTIFICATION_TYPES.INFO, res.response);
+    setTimeout(() => {
+        removeNotification(info);
+    }, 5000);
 
     if (res.response == "room created") {
+        toggle_pages('Page2', 'Page1');
         init_self_stream();
-        ping_server();
     }
 
     if (res.response == "room joined") {
+        toggle_pages('Page2', 'Page1');
         init_self_stream();
-        ping_server();
 
         var res_data = JSON.parse(res.data);
         console.log(res_data);
@@ -2903,7 +2901,7 @@ ws.onmessage = function (msg) {
                 }
             })
         }
-        
+
 
         if (res_data.type == "Mute") {
             var username = res_data.username;
@@ -2940,9 +2938,7 @@ function send_to_server(action, room_id, to_user = " ", data_type = " ", data_us
         }
     };
     //remove later
-    if (obj.action != "Active") {
-        console.log(obj);
-    }
+    console.log(obj);
     ws.send(JSON.stringify(obj));
 }
 
@@ -2962,14 +2958,11 @@ async function create_peer(user) {
 
         peer.on('signal', function (data) {
             if (user.send_offer) {
-                console.log("sending offer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "offer", data_username = our_username, sdp_data = JSON.stringify(data));
                 user.send_offer = false;
-            } else if(user.change_stream) {
-                console.log("sending change stream");
+            } else if (user.change_stream) {
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "change_stream", data_username = our_username, sdp_data = JSON.stringify(data));
             } else {
-                console.log("sending answer");
                 send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "answer", data_username = our_username, sdp_data = JSON.stringify(data));
             }
         });
@@ -2981,12 +2974,6 @@ async function create_peer(user) {
         peer.on('data', (data) => {
             show_data(data);
         })
-        //if (user.add_signal) {
-        //    console.log("adding_signal");
-        //    peer.signal();
-        //    user.add_signal = false;
-        //}
-
         return user.peer_obj;
     });
 }
@@ -3040,20 +3027,17 @@ function create_video_element(name) {
     vid_div.appendChild(vid);
 }
 
-function mute_video(name) {
-    const video = document.getElementById(name);
-    video.muted = "muted";
-}
-
-function unmute_video(name) {
-    const video = document.getElementById(name);
-    video.muted = "";
-}
-
 function remove_video_element(name) {
     var vid_div = document.getElementById("vid_div");
     var vid = document.getElementById(name);
     vid_div.removeChild(vid);
+}
+
+// Manage File
+function set_file(file) {
+    curr_file.name = file.name;
+    curr_file.size = file.size;
+    curr_file.type = file.type;
 }
 },{"simple-peer":32}],8:[function(require,module,exports){
 (function (process){(function (){

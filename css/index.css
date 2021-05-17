@@ -1,0 +1,250 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
+
+*
+{
+   margin: 0;
+   padding: 0;
+   box-sizing: border-box;
+   font-family: 'Poppins', sans-serif;
+}
+
+body
+{
+   /* background: linear-gradient(to right, #baceda, #648880); */
+   background: black;
+}
+
+.container{
+   width: 100vw;
+   height: 100vh;
+   display: grid;
+   grid-template-columns: repeat(2,1fr);
+   grid-gap: 7rem;
+   padding: 0 2rem;
+}
+
+.content{
+   display: flex;
+   align-items: center;
+   text-align: center;
+}
+
+.one{
+   width: 360px;
+   left: 100px;
+   margin-left: 100px;
+   margin-bottom: 100px;
+}
+
+.avatar{
+   width: 150px;
+}
+
+form h1{
+   font-size: 4rem;
+   text-transform: uppercase;
+   margin: 20px 0;
+   color: white;
+}
+
+.hp
+{
+   width: 600px;
+   display: grid;
+   top: 50%;
+   left: 50%;
+   transform: translate(-10%, 40%);
+   z-index: -1;
+}
+
+.modal-bg
+{
+   width: 100%;
+   height: 100%;
+   background-color: rgba(0, 0, 0, 0.7);
+   position: absolute;
+   top: 0;
+   left: 0;
+   display: flex;
+   justify-content: center;
+   align-items: center;
+   display: none;
+}
+
+.modal-content
+{
+   width: 500px;
+   height: 400px;
+   background-color: white;
+   font-size: 30px;
+   border-radius: 10px;
+   text-align: center;
+   position: relative;
+}
+
+.modal-content h2
+{
+   transform: translateY(-15%);
+   padding: 0 0 15px 0;
+   border-bottom: 1px solid silver;
+}
+
+form .txt_field
+{
+   width: 300px;
+   margin: auto;
+   position: relative;
+   margin-bottom: 25px;
+   margin-top: 15px;
+   border-bottom: 2px solid #adadad;
+}
+
+.txt_field input
+{
+   width: 100%;
+   padding: 0 5px;
+   height: 30px;
+   font-size: 16px;
+   border: none;
+   background: none;
+   outline: none;  
+}
+
+.txt_field label
+{
+   position: absolute;
+   top: 50%;
+   left: 5px;
+   color: #adadad;
+   font-size: 16px;
+   transform: translateY(-30%);
+   pointer-events: none;
+   transition: 0.3s;
+}
+
+.close
+{
+   position: absolute;
+   right: 15px;
+   top: 0;
+   font-size: 40px;
+   font-weight: 600;
+   transform: rotate(45deg);
+   cursor: pointer;
+}
+
+.txt_field span::before
+{
+   content: '';
+   position: absolute;
+   top: 45px;
+   left: 0;
+   width: 0%;
+   height: 2px;
+   background: #2691d9;
+   transition: 0.3s;
+}
+
+.txt_field input:focus ~ label,
+.txt_field input:valid ~ label{
+   top: -5px;
+   color: #2691d9;
+}
+
+.txt_field input:focus ~ span::before,
+.txt_field input:valid ~ span::before{
+   width: 100%;
+}
+
+.add-friend
+{
+   margin-top: 15px;
+   width: 50px;
+}
+
+.btn
+{
+   background-color: blue;
+   color: white;
+   font-size: 16px;
+   width: 100px;
+   height: 40px;
+   margin: 10px;
+   border: thin;
+   border-radius: 20px;
+   cursor: pointer;
+}
+
+.btn:hover
+{
+   background-color: rgb(106, 137, 236);
+   color: black;
+   font-weight: 600;
+}
+
+/* Notifiaction CSS */
+
+.notification-container {
+   position: fixed;
+   top: 15px;
+   right: 15px;
+   width: 500px;
+   max-width: calc(100% - 30px);
+}
+
+.notification {
+   background-color: #fff;
+   border-radius: 5px;
+   box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+   color: #fff;
+   font-size: 16px;
+   padding: 15px 20px;
+   line-height: 20px;
+   margin-bottom: 15px;
+   animation: grow 0.5s ease-in forwards;
+}
+
+@keyframes grow {
+   from {
+       opacity: 0;
+       transform: scale(0.8);
+   }
+   to {
+       opacity: 1;
+       transform: scale(1);
+   }
+}
+
+.notification.hide {
+   animation: shrink 0.3s ease-out forwards;
+}
+
+@keyframes shrink {
+   to {
+       opacity: 0;
+       transform: scale(0.8);
+   }
+}
+
+.notification strong {
+   font-size: 12px;
+   line-height: 20px;
+   letter-spacing: 0.5px;
+   text-transform: uppercase;
+}
+
+.notification-info {
+   background-color: #00cae3;
+}
+
+.notification-success {
+   background-color: #55b559;
+}
+
+.notification-warning {
+   background-color: #ff9e0f;
+}
+
+.notification-danger {
+   background-color: #f55145;
+}
