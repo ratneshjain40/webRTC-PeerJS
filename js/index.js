@@ -10,23 +10,41 @@ var users = [];
 var stream_properties = {
     is_muted: false,
 }
-var curr_file = {
-    name: "none",
-    size: "none",
-    type: "none"
-};
+var file;
+
+// ----------- DOM Manipulation -----------
 
 function init_event_binders() {
     document.getElementById("create_btn_inner").addEventListener('click', function () {
         our_username = document.getElementById("create_username").value;
         room_id = document.getElementById("create_room_id").value;
-        create_room(room_id);
+        let valid = validate_input(our_username, room_id);
+        if (valid.username && valid.meeting_id) {
+            create_room(room_id, our_username);
+        } else {
+            if (!valid.username) {
+                notify_user("Username should be more than 4 characters", NOTIFICATION_TYPES.WARNING);
+            }
+            if (!valid.meeting_id) {
+                notify_user("Meeting ID should be more than 4 characters", NOTIFICATION_TYPES.WARNING);
+            }
+        }
     });
 
     document.getElementById("join_btn_inner").addEventListener('click', function () {
         our_username = document.getElementById("join_username").value;
         room_id = document.getElementById("join_room_id").value;
-        join_room(room_id);
+        let valid = validate_input(our_username, room_id);
+        if (valid.username && valid.meeting_id) {
+            join_room(room_id, our_username);
+        } else {
+            if (!valid.username) {
+                notify_user("Username should be more than 4 characters", NOTIFICATION_TYPES.WARNING);
+            }
+            if (!valid.meeting_id) {
+                notify_user("Meeting ID should be more than 4 characters", NOTIFICATION_TYPES.WARNING);
+            }
+        }
     });
 
     //document.getElementById("send").addEventListener('click', function () {
@@ -38,8 +56,9 @@ function init_event_binders() {
     document.getElementById("leave").addEventListener('click', function () {
         send_to_server("Leave Room", room_id);
         close_connections();
-        reset_properties();
         notify_user("Left Room ID : " + room_id);
+        reset_properties();
+        toggle_pages('Page1', 'Page2');
     });
 
     document.getElementById("mic").addEventListener('click', function () {
@@ -52,16 +71,34 @@ function init_event_binders() {
     //}
 }
 
-// --------- Manage users ---------
-
-function create_room(room_id) {
-    console.log("button create is clicked ");
-    send_to_server("Create Room", room_id);
+function validate_input(username, meeting_id) {
+    let valid = {
+        "username": true,
+        "meeting_id": true
+    };
+    if (username.length < 4) {
+        valid.username = false;
+    }
+    if (meeting_id.length < 4) {
+        valid.meeting_id = false;
+    }
+    return valid;
 }
 
-function join_room(room_id) {
+function display_text_message(from, text_message) {
+    //document.getElementById("messages").textContent += text_message + '\n';
+}
+
+// --------- Manage users ---------
+
+function create_room(meeting_id, username) {
+    console.log("button create is clicked ");
+    send_to_server(action = "Create Room", room_id = meeting_id, data_username = username);
+}
+
+function join_room(meeting_id, username) {
     console.log("button join is clicked ");
-    send_to_server("Join Room", room_id);
+    send_to_server(action = "Join Room", room_id = meeting_id, data_username = username);
 }
 
 function ping_server() {
@@ -93,10 +130,14 @@ function remove_user(user) {
     }
 }
 
-function notify_user(text, time = 5000) {
+function notify_user(text, type = null, time = 5000) {
     let do_not_notify = ["connection data", "left room"];
     if (!do_not_notify.includes(text)) {
-        quickNotification(text);
+        if (type == null) {
+            quickNotification(text);
+        } else {
+            quickNotification(text, type);
+        }
     }
 }
 
@@ -129,11 +170,6 @@ function reset_properties() {
     our_username;
     users = [];
     stream_properties.is_muted = false;
-    curr_file = {
-        name: "none",
-        size: "none",
-        type: "none"
-    };
 }
 
 //---------------------- WebSocket event listeners ----------------------
@@ -255,8 +291,21 @@ async function create_peer(user) {
         var peer = new Peer({
             initiator: user.initiate,
             trickle: false,
-            stream: stream
-        })
+            stream: stream,
+            config: {
+
+                iceServers: [
+                    {
+                        urls: 'stun:stun.l.google.com:19302'
+                    },
+                    {
+                        urls: "turn:13.250.13.83:3478?transport=udp",
+                        username: "YzYNCouZM1mhqhmseWk6",
+                        credential: "YzYNCouZM1mhqhmseWk6"
+                    }
+                ]
+            }
+        });
 
         user.peer_obj = peer;
 
@@ -277,22 +326,37 @@ async function create_peer(user) {
         });
 
         peer.on('data', (data) => {
-            show_data(data);
+            recive_data(data);
         })
         return user.peer_obj;
     });
 }
 
-function send_data(data, to_user = 'all') {
+function create_data_obj(from, type, data) {
+    let data_obj = {
+        "from": from,
+        "type": type,
+        "data": data
+    };
+    return data_obj;
+}
+
+function send_text(text_msg, to_user = 'all') {
+    let data = create_data_obj(our_username, "text", text_msg);
     users.forEach((user) => {
         if (to_user == "all" || to_user == user.user_name) {
-            user.peer_obj.send(data);
+            user.peer_obj.send(JSON.stringify(data));
         }
     });
 }
 
-function show_data(text_message) {
-    document.getElementById("messages").textContent += text_message + '\n';
+function recive_data(data) {
+    if (data.toString().includes("type")) {
+        let parsed = JSON.parse(data);
+        if (parsed.type == "text") {
+            display_text_message(parsed.form, parsed.data);
+        }
+    }
 }
 
 function close_connections(username = '') {
@@ -350,7 +414,14 @@ function remove_video_element(name) {
 
 // Manage File
 function set_file(file) {
+    var curr_file = {
+        "name": "none",
+        "size": "none",
+        "type": "none",
+        "file": file
+    }
     curr_file.name = file.name;
     curr_file.size = file.size;
     curr_file.type = file.type;
+    return curr_file;
 }
