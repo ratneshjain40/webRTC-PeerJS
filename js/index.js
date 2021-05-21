@@ -488,9 +488,36 @@ function create_video_element(name) {
         vid.setAttribute("id", name);
         vid.setAttribute("autoplay", "true");
         vid.setAttribute("poster", "../assets/video-placeholder.png");
-
+        set_video_username(name,vid_div);
         vid_div.appendChild(vid);
     }
+}
+
+function remove_video_element(name) {
+    var vid_div_id = get_video_div(name);
+
+    if (vid_div_id == 'none') {
+        console.log("No video div to remove");
+    } else {
+        console.log(vid_div_id);
+        video_div_info[vid_div_id]["name"] = "none";
+        video_div_info[vid_div_id]["src"] = "none";
+
+        var vid_div = document.getElementById(vid_div_id);
+        var vid = document.getElementById(name);
+        remove_video_username(vid_div_id,vid_div);
+        vid_div.removeChild(vid);
+    }
+    console.log(video_div_info);
+}
+
+function set_video_username(name,element) {
+    element.getElementsByTagName("h4")[0].innerHTML = name;
+}
+
+function remove_video_username(div_number,element) {
+    var index = Object.keys(video_div_info).indexOf(div_number);
+    element.getElementsByTagName("h4")[0].innerHTML = "User " + (index + 1);
 }
 
 function pause_video(name) {
@@ -516,23 +543,6 @@ function resume_video(name) {
         vid.srcObject = video_div_info[vid_div_id]["src"]
             ;
     }
-}
-
-function remove_video_element(name) {
-    var vid_div_id = get_video_div(name);
-
-    if (vid_div_id == 'none') {
-        console.log("No video div to remove");
-    } else {
-        console.log(vid_div_id);
-        video_div_info[vid_div_id]["name"] = "none";
-        video_div_info[vid_div_id]["src"] = "none";
-
-        var vid_div = document.getElementById(vid_div_id);
-        var vid = document.getElementById(name);
-        vid_div.removeChild(vid);
-    }
-    console.log(video_div_info);
 }
 
 function mute_video(name) {

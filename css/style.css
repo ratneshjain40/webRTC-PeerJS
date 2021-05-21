@@ -5,6 +5,11 @@ html,body
    height: 100%;
 }
 
+.page2
+{
+   background-color: white;
+}
+
 header
 {
    position: absolute;
@@ -50,9 +55,18 @@ header.active
    float: left;
    width: 50%;
    height: 45vh;
-   padding: 20px;
+   display: flex;
    z-index: 1000;
    transition: 0.2s;
+}
+
+.column h4
+{
+   position: relative;
+   display: flex;
+   align-items: flex-end;
+   bottom: 10px;
+   left: 10px;
 }
 
 .row:after {
