@@ -37,6 +37,7 @@ function reset_properties() {
     users = [];
     stream_properties = {
         is_muted: false,
+        video_paused:false
     };
     video_div_info = {
         "vid_one": {
