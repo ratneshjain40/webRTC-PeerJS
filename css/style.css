@@ -1,5 +1,66 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@100;200;300;400;500;600;700;800;900&display=swap');
 
+html,body
+{
+   height: 100%;
+}
+
+header
+{
+   position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0 20px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    z-index: 1000;
+}
+
+header.active
+{
+   width: 75%;
+}
+
+#messages
+{
+   position: fixed;
+   top: 0;
+   right: -25%;
+   width: 25%;
+   height: 90vh;
+   background: white;
+   display: grid;
+   transition: 0.2s;
+   z-index: 0;
+}
+
+#messages.active
+{
+   right: 0;
+}
+
+.shrink.active
+{
+   width: 75%;
+}
+
+.column {
+   float: left;
+   width: 50%;
+   height: 45vh;
+   padding: 20px;
+   z-index: 1000;
+   transition: 0.2s;
+}
+
+.row:after {
+   content: "";
+   display: table;
+   clear: both;
+}
+
 .bottom
 {
    background-color: rgb(107, 178, 180);
@@ -7,14 +68,16 @@
    width: 100%;
    height: 80px;
    bottom: 0;
+   overflow: hidden;
 }
 
 .elements
 {
    margin: auto;
-   width: 50%;
-   height: 50px;
-   padding: 40px;
+   height: 80px;
+   display: flex;
+   justify-content: center;
+   align-items: center;
 }
 
 .fa-stack
@@ -25,7 +88,7 @@
    height: 45px;
 }
 
-.img{
+.end-call .img{
    width: 27px;
    height: 27px;
    vertical-align: -3px; 
@@ -52,8 +115,79 @@
 
 .three
 {
+   margin: 40px;
    display: flex;
    justify-content: center;
    align-items: center;
-   transform: translateY(-50%);
 }
+
+.fa-comment-dots
+{
+   font-size: 1.5em;
+}
+
+
+#messages .receive-msg
+{
+   height: calc(100vh - 180px);
+}
+
+pre 
+{
+   display: block;
+   font-family: monospace;
+   white-space: pre;
+   margin: 1em;
+}
+
+.send-msg
+{
+   position: relative;
+   height: 80px;
+   border-top: 1px solid #bbbaba;
+   border: none;
+   box-shadow: 0 -1px 1px 0 rgb(60 64 67 / 15%);
+}
+
+.send-msg #form-1
+{
+   width: 100%;
+   height: 50px;
+   margin-top: 20px;
+   display: flex;
+   align-items: center;
+   justify-content: space-around;
+}
+
+#form-1 input
+{
+   position: relative;
+   height: 24px;
+   font-size: 13px;
+   width: 80%;
+   border-bottom: 2px solid #adadad;
+}
+
+#form-1 img
+{
+   position: relative;
+   width: 20px;
+}
+
+.msg-clm
+{
+   position: relative;
+   width: 100%;
+}
+
+@media screen and (max-width: 600px) {
+   .column {
+      width: 100%;
+   }
+}
+
+video {
+   width: 100%;
+   height: 100%;
+   align-self: center;
+ }

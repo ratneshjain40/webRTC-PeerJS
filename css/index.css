@@ -10,8 +10,8 @@
 
 body
 {
-   /* background: linear-gradient(to right, #baceda, #648880); */
    background: black;
+   height: 100%;
 }
 
 .container{
@@ -120,6 +120,13 @@ form .txt_field
    transform: translateY(-30%);
    pointer-events: none;
    transition: 0.3s;
+}
+
+.form-control i {
+	/* visibility: hidden; */
+	position: absolute;
+	top: 40px;
+	right: 10px;
 }
 
 .close

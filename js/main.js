@@ -49,6 +49,24 @@ document.getElementById('video').addEventListener('click', function () {
   }
 })
 
+function reset_button_state() {
+  var icon_div = document.getElementById('video');
+  var icon = icon_div.querySelector('i');
+
+  if (!(icon.classList.contains('fa-video'))) {
+    icon.classList.remove('fa-video-slash');
+    icon.classList.add('fa-video');
+  }
+
+  icon_div = document.getElementById('mic');
+  icon = icon_div.querySelector('i');
+
+  if (!(icon.classList.contains('fa-microphone'))) {
+    icon.classList.remove('fa-microphone-slash');
+    icon.classList.add('fa-microphone');
+  }
+}
+
 // Notifications
 const notificationContainer = document.getElementById('notification-container');
 const NOTIFICATION_TYPES = {
@@ -85,9 +103,35 @@ function removeNotification(notification) {
   }, 500);
 }
 
-function quickNotification(text, time = 5000) {
-  const info = addNotification(NOTIFICATION_TYPES.INFO, text);
+function quickNotification(text, type = NOTIFICATION_TYPES.INFO, time = 5000) {
+  const info = addNotification(type, text);
   setTimeout(() => {
     removeNotification(info);
   }, time);
+}
+
+// Messages
+function toggle()
+{
+    var header = document.getElementById('header');
+    var messages = document.getElementById('messages');
+    var shrink = document.getElementById('shrink');
+    header.classList.toggle('active');
+    messages.classList.toggle('active');
+    shrink.classList.toggle('active');
+}
+
+function display_text_message(from,text)
+{
+  console.log(text);
+  text = from + ": " + text;
+  let msg_box = document.getElementById("receive-msg");
+  
+  let pre = document.createElement("pre");
+  let node = document.createTextNode(text);
+  pre.appendChild(node);
+
+  msg_box.appendChild(pre);
+
+  document.getElementById("send-text").value = '';
 }

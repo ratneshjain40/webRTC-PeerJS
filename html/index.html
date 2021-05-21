@@ -2,40 +2,144 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>First Try</title>
+   <meta charset="UTF-8">
+   <meta http-equiv="X-UA-Compatible" content="IE=edge">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <link rel="stylesheet" href="../css/index.css">
+   <link rel="stylesheet" href="../css/style.css">
+   <script src="https://kit.fontawesome.com/a8c9273754.js" crossorigin="anonymous"></script>
+   <title>Welcome</title>
 </head>
 
 <body>
-    <label for="">Username</label>
-    <br>
-    <textarea id="our_username" cols="15" rows="5"></textarea>
-    <br>
-    <label for="">Room ID</label>
-    <br>
-    <textarea id="RoomID" cols="30" rows="10"></textarea>
-    <button id="create">Create</button>
-    <button id="join">Join</button>
-    <button id="leave">Leave</button>
-    <br>
-    <textarea id="send_messages" cols="15" rows="5"></textarea>
-    <pre id="messages"></pre>
-    <button id="send">Send</button>
 
-    <div id="vid_div">
-        <label>Your vid</label>
-        <br>
-    </div>
-    <button id="replace">mute</button>
+   <div class="notification-container" id="notification-container"></div>
 
-    <br>
-    <input type="file" id="file">
-    <button id="file_input">send</button>
+   <div id="Page1">
+      <div class="container">
+         <div class="content">
 
+            <form class="one" action="javascript:void(0);">
+               <img class="avatar" src="../assets/avatar.svg" alt="avatar">
+               <h1>Welcome</h1>
+               <div>
+                  <button id="crt_btn" class="btn">Create</button>
+                  <button id="join_btn" class="btn">Join</button>
 
+                  <!-- Create modal -->
+                  <div id="create" class="modal-bg">
+                     <div class="modal-content">
+                        <span class="close">+</span>
+                        <img src="../assets/add-friend.svg" class="add-friend" width="50px" alt="">
+                        <h2>Create</h2>
+                        <form action="javascript:void(0);">
+                           <div class="txt_field">
+                              <input id="create_username" type="text" class="input" required>
+                              <span></span>
+                              <label>Username</label>
+                           </div>
+                           <div class="txt_field">
+                              <input id="create_room_id" type="text" class="input" required>
+                              <span></span>
+                              <label>Meeting ID</label>
+                           </div>
+                           <button id="create_btn_inner" class="btn">Create</button>
+                        </form>
+                     </div>
+                  </div>
+
+                  <!-- Join Modal -->
+                  <div id="join" class="modal-bg">
+                     <div class="modal-content">
+                        <span class="close">+</span>
+                        <img src="../assets/add-friend.svg" class="add-friend" width="50px" alt="">
+                        <h2>Join</h2>
+                        <form action="javascript:void(0);">
+                           <div class="txt_field">
+                              <input id="join_username" type="text" class="input" required>
+                              <span></span>
+                              <label>Username</label>
+                           </div>
+                           <div class="txt_field">
+                              <input id="join_room_id" type="text" class="input" required>
+                              <span></span>
+                              <label>Meeting ID</label>
+                           </div>
+                           <button id="join_btn_inner" class="btn">Connect</button>
+                        </form>
+                     </div>
+                  </div>
+               </div>
+            </form>
+         </div>
+         <img class="hp" src="../assets/undraw_business_chat_ldig.svg" alt="">
+      </div>
+   </div>
+
+   <!-- Meeting HTML -->
+   <div id="Page2" style="display:none">
+
+      <div id="messages">
+         <div class="receive-msg" id="receive-msg">
+            <pre class="pre">
+            </pre>
+         </div>
+         <div class="send-msg">
+            <div class="txt_field">
+               <form action="javascript:void(0);" id=form-1>
+                  <input type="text" id=send-text placeholder="Send Message">
+                  <img src="../assets/send_icon.jpg" id="send" alt="">
+               </form>
+            </div>
+         </div>
+      </div>
+      <div class="shrink" id="shrink">
+         <div id="vid_div">
+            <header id="header">
+               <div class="toggle" onclick="toggle()">
+                  <button class="button icons" id="message">
+                     <i class='fas fa-comment-dots fa-inverse'></i>
+                  </button>
+               </div>
+            </header>
+            <div class="row">
+               <div class="column" id="vid_one" style="background-color:#aaa;">
+               </div>
+               <div class="column" id="vid_two" style="background-color:#bbb;">
+               </div>
+               <div class="column" id="vid_three" style="background-color:#ccc;">
+               </div>
+               <div class="column" id="vid_four" style="background-color:#ddd;">
+               </div>
+            </div>
+         </div>
+         <div id='btm' class="bottom">
+            <div>
+               <div class="elements">
+                  <div class="three">
+                     <span>
+                        <button class="button icons " id="mic">
+                           <i class='fas fa-microphone fa-lg fa-inverse'></i>
+                        </button>
+                     </span>
+                     <span class="end-call">
+                        <button class="button" id = "leave">
+                           <img class="img" src="../assets/end-call.png" alt="">
+                        </button>
+                     </span>
+                     <span>
+                        <button class="button icons" id="video">
+                           <i class='fas fa-video fa-lg fa-inverse'></i>
+                        </button>
+                     </span>
+                  </div>
+               </div>
+            </div>
+         </div>
+      </div>
+   </div>
+   <script src="../js/main.js"></script>
+   <script src="../js/client.js"></script>
 </body>
-<script src="../js/client.js"></script>
 
 </html>

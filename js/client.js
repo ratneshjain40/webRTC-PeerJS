@@ -2696,8 +2696,54 @@ var our_username;
 var users = [];
 var stream_properties = {
     is_muted: false,
+    video_paused: false
 }
-var file;
+var video_div_info = {
+    "vid_one": {
+        "name": "none",
+        "src": "none"
+    },
+    "vid_two": {
+        "name": "none",
+        "src": "none"
+    },
+    "vid_three": {
+        "name": "none",
+        "src": "none"
+    },
+    "vid_four": {
+        "name": "none",
+        "src": "none"
+    },
+};
+
+function reset_properties() {
+    reset_button_state();
+    room_id = " ";
+    our_username;
+    users = [];
+    stream_properties = {
+        is_muted: false,
+    };
+    video_div_info = {
+        "vid_one": {
+            "name": "none",
+            "src": "none"
+        },
+        "vid_two": {
+            "name": "none",
+            "src": "none"
+        },
+        "vid_three": {
+            "name": "none",
+            "src": "none"
+        },
+        "vid_four": {
+            "name": "none",
+            "src": "none"
+        },
+    };
+}
 
 // ----------- DOM Manipulation -----------
 
@@ -2734,15 +2780,10 @@ function init_event_binders() {
         }
     });
 
-    //document.getElementById("send").addEventListener('click', function () {
-    //    var text = document.getElementById("send_messages").value;
-    //    document.getElementById("send_messages").value = " ";
-    //    send_data(text);
-    //});
-
     document.getElementById("leave").addEventListener('click', function () {
         send_to_server("Leave Room", room_id);
         close_connections();
+        remove_video_element(our_username);
         notify_user("Left Room ID : " + room_id);
         reset_properties();
         toggle_pages('Page1', 'Page2');
@@ -2752,10 +2793,24 @@ function init_event_binders() {
         toggle_mute();
     });
 
-    //var input = document.getElementById("file");
-    //input.onchange = e => {
-    //    set_file(e.target.files[0]);
-    //}
+    document.getElementById("video").addEventListener('click', function () {
+        toggle_video();
+    });
+
+    document.getElementById("send").addEventListener('click', function () {
+        let text = document.getElementById('send-text').value;
+        display_text_message(our_username, text);
+        send_text(text);
+    });
+
+    document.getElementById("send-text").addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            let text = document.getElementById('send-text').value;
+            display_text_message(our_username, text);
+            send_text(text);
+        }
+    });
+
 }
 
 function validate_input(username, meeting_id) {
@@ -2770,10 +2825,6 @@ function validate_input(username, meeting_id) {
         valid.meeting_id = false;
     }
     return valid;
-}
-
-function display_text_message(from, text_message) {
-    //document.getElementById("messages").textContent += text_message + '\n';
 }
 
 // --------- Manage users ---------
@@ -2794,16 +2845,17 @@ function ping_server() {
     }, 25000);
 }
 
-function create_user(username, initiate = true, send_offer = true, sdp_data = " ", peer_obj = " ", change_stream = false, stream_muted = false) {
+function create_user(username, initiate = true, send_offer = true, sdp_data = " ") {
     var user = {
         "user_name": username,
         "initiate": initiate,
         "send_offer": send_offer,
         "sdp_data": sdp_data,
-        "peer_obj": peer_obj,
+        "peer_obj": " ",
         "stream_properties": {
-            "change_stream": change_stream,
-            "stream_muted": stream_muted
+            "change_stream": false,
+            "stream_muted": false,
+            "video_paused": false
         }
     };
     return user;
@@ -2842,6 +2894,22 @@ function toggle_mute() {
     };
 }
 
+function toggle_video() {
+    if (!stream_properties.video_paused) {
+        users.forEach((user) => {
+            send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Pause", data_username = our_username, sdp_data = '');
+        })
+        pause_video(our_username);
+        stream_properties.video_paused = !stream_properties.video_paused;
+    } else {
+        users.forEach((user) => {
+            send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Resume", data_username = our_username, sdp_data = '');
+        })
+        resume_video(our_username);
+        stream_properties.video_paused = !stream_properties.video_paused;
+    };
+}
+
 function modify_stream(username) {
     if (stream_properties.is_muted) {
         users.forEach((user) => {
@@ -2850,13 +2918,13 @@ function modify_stream(username) {
             }
         })
     }
-}
-
-function reset_properties() {
-    room_id = " ";
-    our_username;
-    users = [];
-    stream_properties.is_muted = false;
+    if (stream_properties.video_paused) {
+        users.forEach((user) => {
+            if (user.user_name == username && user.stream_properties.stream_muted == false) {
+                send_to_server(action = "Send Data", room_id = room_id, to_user = user.user_name, data_type = "Pause", data_username = our_username, sdp_data = '');
+            }
+        })
+    }
 }
 
 //---------------------- WebSocket event listeners ----------------------
@@ -2937,6 +3005,16 @@ ws.onmessage = function (msg) {
             var username = res_data.username;
             unmute_video(username);
         }
+
+        if (res_data.type == "Pause") {
+            var username = res_data.username;
+            pause_video(username);
+        }
+
+        if (res_data.type == "Resume") {
+            var username = res_data.username;
+            resume_video(username);
+        }
     }
 
     if (res_obj.response == "left room") {
@@ -2978,20 +3056,7 @@ async function create_peer(user) {
         var peer = new Peer({
             initiator: user.initiate,
             trickle: false,
-            stream: stream,
-            config: {
-
-                iceServers: [
-                    {
-                        urls: 'stun:stun.l.google.com:19302'
-                    },
-                    {
-                        urls: "turn:13.250.13.83:3478?transport=udp",
-                        username: "YzYNCouZM1mhqhmseWk6",
-                        credential: "YzYNCouZM1mhqhmseWk6"
-                    }
-                ]
-            }
+            stream: stream
         });
 
         user.peer_obj = peer;
@@ -3008,13 +3073,13 @@ async function create_peer(user) {
             }
         });
 
+        peer.on("data", function (data) {
+            recive_data(data);
+        })
+
         peer.on("stream", function (stream) {
             show_video(stream, user.user_name);
         });
-
-        peer.on('data', (data) => {
-            recive_data(data);
-        })
         return user.peer_obj;
     });
 }
@@ -3041,7 +3106,7 @@ function recive_data(data) {
     if (data.toString().includes("type")) {
         let parsed = JSON.parse(data);
         if (parsed.type == "text") {
-            display_text_message(parsed.form, parsed.data);
+            display_text_message(parsed.from, parsed.data);
         }
     }
 }
@@ -3059,28 +3124,101 @@ function close_connections(username = '') {
 
 // ----------- Manage video -----------
 
+function get_empty_video_div(name) {
+    for (vid in video_div_info) {
+        if (name == our_username) {
+            return "vid_one"
+        }
+        else if (vid != "vid_one" && video_div_info[vid]["name"] == 'none') {
+            return vid
+        }
+    }
+    return 'none'
+}
+
+function get_video_div(name) {
+    for (vid in video_div_info) {
+        if (video_div_info[vid]["name"] == name) {
+            return vid
+        }
+    }
+    return 'none'
+}
+
 function init_self_stream() {
     stream.then(function (stream) {
-        show_video(stream, our_username, true);
+        show_video(stream, our_username);
+        mute_video(our_username);
     });
 }
 
-function show_video(stream, streamer, muted = false) {
+function show_video(stream, streamer) {
     create_video_element(streamer);
     const video = document.getElementById(streamer);;
     video.srcObject = stream;
-    if (muted) {
-        video.muted = "muted";
-    }
+    video_div_info[get_video_div(streamer)]["src"] = stream;
+
     video.play();
 };
 
 function create_video_element(name) {
-    var vid_div = document.getElementById("vid_div");
-    var vid = document.createElement("video");
-    vid.setAttribute("id", name);
-    vid.setAttribute("autoplay", "true");
-    vid_div.appendChild(vid);
+    var free_vid_div_id = get_empty_video_div(name);
+
+    if (free_vid_div_id == 'none') {
+        console.log("No video div left");
+    } else {
+        video_div_info[free_vid_div_id]["name"] = name;
+
+        var vid_div = document.getElementById(free_vid_div_id);
+        var vid = document.createElement("video");
+        vid.setAttribute("id", name);
+        vid.setAttribute("autoplay", "true");
+        vid.setAttribute("poster", "../assets/video-placeholder.png");
+
+        vid_div.appendChild(vid);
+    }
+}
+
+function pause_video(name) {
+    var vid_div_id = get_video_div(name);
+
+    if (vid_div_id == 'none') {
+        console.log("No video div to pause");
+    } else {
+        var vid = document.getElementById(name);
+        new_st = video_div_info[vid_div_id]["src"].clone();
+        new_st.removeTrack(new_st.getVideoTracks()[0])
+        vid.srcObject = new_st;
+    }
+}
+
+function resume_video(name) {
+    var vid_div_id = get_video_div(name);
+
+    if (vid_div_id == 'none') {
+        console.log("No video div to pause");
+    } else {
+        var vid = document.getElementById(name);
+        vid.srcObject = video_div_info[vid_div_id]["src"]
+            ;
+    }
+}
+
+function remove_video_element(name) {
+    var vid_div_id = get_video_div(name);
+
+    if (vid_div_id == 'none') {
+        console.log("No video div to remove");
+    } else {
+        console.log(vid_div_id);
+        video_div_info[vid_div_id]["name"] = "none";
+        video_div_info[vid_div_id]["src"] = "none";
+
+        var vid_div = document.getElementById(vid_div_id);
+        var vid = document.getElementById(name);
+        vid_div.removeChild(vid);
+    }
+    console.log(video_div_info);
 }
 
 function mute_video(name) {
@@ -3091,26 +3229,6 @@ function mute_video(name) {
 function unmute_video(name) {
     const video = document.getElementById(name);
     video.muted = "";
-}
-
-function remove_video_element(name) {
-    var vid_div = document.getElementById("vid_div");
-    var vid = document.getElementById(name);
-    vid_div.removeChild(vid);
-}
-
-// Manage File
-function set_file(file) {
-    var curr_file = {
-        "name": "none",
-        "size": "none",
-        "type": "none",
-        "file": file
-    }
-    curr_file.name = file.name;
-    curr_file.size = file.size;
-    curr_file.type = file.type;
-    return curr_file;
 }
 },{"simple-peer":32}],8:[function(require,module,exports){
 (function (process){(function (){
