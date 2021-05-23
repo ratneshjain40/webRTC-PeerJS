@@ -54,10 +54,10 @@ header.active
 .column {
    float: left;
    width: 50%;
-   height: 45vh;
+   height: calc(100vh/2 - 40px);
    display: flex;
    z-index: 1000;
-   transition: 0.2s;
+   padding: 5px;
 }
 
 .column h4
@@ -146,11 +146,19 @@ header.active
    height: calc(100vh - 180px);
 }
 
+div.scroll {
+   width: 100%;
+   height: 100%;
+   overflow-x: hidden;
+   overflow-y: auto;
+   padding: 20px;
+}
+
 pre 
 {
    display: block;
    font-family: monospace;
-   white-space: pre;
+   white-space: normal;
    margin: 1em;
 }
 

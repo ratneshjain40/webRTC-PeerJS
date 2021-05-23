@@ -2686,8 +2686,8 @@ process.umask = function() { return 0; };
 
 },{}],7:[function(require,module,exports){
 var Peer = require("simple-peer");
-var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
-//var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
+//var ws = new WebSocket("ws://webrtc-proj.herokuapp.com/signal");
+var ws = new WebSocket("ws://localhost:8080/webRTC/signal");
 
 var stream = navigator.mediaDevices.getUserMedia({ video: true, audio: true });
 
