@@ -540,8 +540,7 @@ function resume_video(name) {
         console.log("No video div to pause");
     } else {
         var vid = document.getElementById(name);
-        vid.srcObject = video_div_info[vid_div_id]["src"]
-            ;
+        vid.srcObject = video_div_info[vid_div_id]["src"];
     }
 }
 
